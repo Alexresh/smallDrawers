@@ -1,5 +1,7 @@
 {
   "drawer.locked": "The drawer is locked, the players who have access:\n",
   "drawer.unlocked": "The drawer is unlocked",
-  "drawer.locked.by.owner": "This drawer is locked by the owner"
+  "drawer.locked.by.owner": "This drawer is locked by the owner",
+  "drawer.upgraded": "Drawer upgraded!",
+  "drawer.max.upgraded": "The drawer has been upgraded as much as possible!"
 }

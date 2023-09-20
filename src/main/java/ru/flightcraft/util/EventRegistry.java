@@ -70,12 +70,28 @@ public class EventRegistry {
         DrawerData.onUse(frameSaver, player);
 
         ItemStack playerHeldItem = player.getMainHandStack();
+        //upgrade
+        if(playerHeldItem.isOf(Items.DIAMOND_BLOCK) && playerHeldItem.getNbt() != null){
+            if(playerHeldItem.isOf(Items.DIAMOND_BLOCK) && playerHeldItem.getNbt().getCompound("display").getString("Name").contains("upgrade")){
+                if(DrawerData.upgrade(frameSaver)){
+                    player.sendMessage(Text.translatable("drawer.upgraded"));
+                    playerHeldItem.decrement(1);
+                }else {
+                    player.sendMessage(Text.translatable("drawer.max.upgraded"));
+                }
+            }
+        }
         if(playerHeldItem.isEmpty()){
             if(player.isSneaking()){
                 //if player main hand is empty and drawer is empty then delete drawer
                 if(DrawerData.getCount(frameSaver) == 0 && DrawerData.getOwner(frameSaver).equals(player.getName().getString())){
+                    ItemStack diamond_block = new ItemStack(Items.DIAMOND_BLOCK);
+                    diamond_block.setCount(DrawerData.getUpgrades(frameSaver));
+
                     itemFrameEntity.dropStack(new ItemStack(Items.BARREL));
                     itemFrameEntity.dropStack(new ItemStack(Items.ITEM_FRAME));
+                    itemFrameEntity.dropStack(diamond_block);
+
                     itemFrameEntity.kill();
                     return ActionResult.SUCCESS;
                 }
@@ -126,7 +142,7 @@ public class EventRegistry {
             return ActionResult.SUCCESS;
         }
         //lock/unlock
-        if(playerHeldItem.isOf(Items.TRIPWIRE_HOOK) && playerHeldItem.hasCustomName() && playerHeldItem.getNbt() != null){
+        if(playerHeldItem.isOf(Items.TRIPWIRE_HOOK) && playerHeldItem.getNbt() != null){
             String name = playerHeldItem.getNbt().getCompound("display").getString("Name");
             if(DrawerData.getOwner(frameSaver).equals(player.getName().getString())){
                 if(name.contains("lock")){
@@ -140,6 +156,8 @@ public class EventRegistry {
                 }
             }
         }
+
+
         return ActionResult.PASS;
     }
 

@@ -1,5 +1,7 @@
 {
   "drawer.locked": "Ящик заблокирован, игроки у которых есть доступ:\n",
   "drawer.unlocked": "Ящик разблокирован",
-  "drawer.locked.by.owner": "Ящик заблокирован владельцем"
+  "drawer.locked.by.owner": "Ящик заблокирован владельцем",
+  "drawer.upgraded": "Ящик улучшен!",
+  "drawer.max.upgraded": "Ящик улучшен на максимум!"
 }

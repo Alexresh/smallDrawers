@@ -13,6 +13,7 @@ public class DrawerData {
     private static final String usersKey = "users";
     private static final String ownerKey = "owner";
     private static final String lockKey = "lock";
+    private static final String upgradesKey = "upgrades";
     private static final int smallSize = 2048;
     private static final int mediumSize = 4096;
     private static final int largeSize = 8192;
@@ -70,6 +71,25 @@ public class DrawerData {
         nbtCompound.putBoolean(isDrawerKey, true);
         nbtCompound.putInt(maxCountKey, smallSize);
     }
+
+    public static boolean upgrade(IEntityNBTSaver frame){
+        NbtCompound nbtCompound = frame.getPersistentData();
+        int maxCount = nbtCompound.getInt(maxCountKey);
+        switch (maxCount){
+            case smallSize -> nbtCompound.putInt(maxCountKey, mediumSize);
+            case mediumSize -> nbtCompound.putInt(maxCountKey, largeSize);
+            case largeSize -> {
+                return false;
+            }
+        }
+        nbtCompound.putInt(upgradesKey, nbtCompound.getInt(upgradesKey) + 1);
+        return true;
+    }
+
+    public static int getUpgrades(IEntityNBTSaver frame){
+        return frame.getPersistentData().getInt(upgradesKey);
+    }
+
     public static void changeToItemFrame(IEntityNBTSaver frame){
         NbtCompound nbtCompound = frame.getPersistentData();
         nbtCompound.putBoolean(isDrawerKey, false);
