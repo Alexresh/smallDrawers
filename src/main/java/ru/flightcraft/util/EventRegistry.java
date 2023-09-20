@@ -12,9 +12,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -30,6 +30,12 @@ public class EventRegistry {
         IEntityNBTSaver frameSaver = (IEntityNBTSaver) itemFrameEntity;
         //if drawer
         if(DrawerData.isDrawer(frameSaver)){
+            if(!DrawerData.canUse(frameSaver, player)){
+                player.sendMessage(Text.translatable("drawer.locked.by.owner"));
+                return ActionResult.SUCCESS;
+            }
+            DrawerData.onUse(frameSaver, player);
+
             if(player.isSneaking()){
                 int count = DrawerData.removeMax(frameSaver);
                 ItemStack insertStack = itemFrameEntity.getHeldItemStack().getItem().getDefaultStack();
@@ -53,15 +59,21 @@ public class EventRegistry {
     public static ActionResult useEntity(PlayerEntity player, World world, Hand hand, Entity entity, @Nullable EntityHitResult hitResult) {
         if(world.isClient) return ActionResult.PASS;
         if(!(entity instanceof ItemFrameEntity itemFrameEntity)) return ActionResult.PASS;
+        if(hitResult == null) return ActionResult.SUCCESS;
 
         IEntityNBTSaver frameSaver = (IEntityNBTSaver) itemFrameEntity;
         if(!DrawerData.isDrawer(frameSaver)) return ActionResult.PASS;
+        if(!DrawerData.canUse(frameSaver, player)){
+            player.sendMessage(Text.translatable("drawer.locked.by.owner"));
+            return ActionResult.SUCCESS;
+        }
+        DrawerData.onUse(frameSaver, player);
 
         ItemStack playerHeldItem = player.getMainHandStack();
         if(playerHeldItem.isEmpty()){
             if(player.isSneaking()){
                 //if player main hand is empty and drawer is empty then delete drawer
-                if(DrawerData.getCount(frameSaver) == 0){
+                if(DrawerData.getCount(frameSaver) == 0 && DrawerData.getOwner(frameSaver).equals(player.getName().getString())){
                     itemFrameEntity.dropStack(new ItemStack(Items.BARREL));
                     itemFrameEntity.dropStack(new ItemStack(Items.ITEM_FRAME));
                     itemFrameEntity.kill();
@@ -91,7 +103,6 @@ public class EventRegistry {
             return ActionResult.SUCCESS;
         }
         ItemStack itemFrameHeld = itemFrameEntity.getHeldItemStack();
-
         //adding first item
         if(itemFrameEntity.getHeldItemStack().isEmpty()){
             if(playerHeldItem.getMaxCount() != 64) return ActionResult.SUCCESS;
@@ -104,7 +115,6 @@ public class EventRegistry {
             return ActionResult.SUCCESS;
         }
 
-
         if(itemFrameHeld.getItem() == playerHeldItem.getItem()){
             int count = playerHeldItem.getCount();
             //insert items and set oversize count
@@ -115,6 +125,21 @@ public class EventRegistry {
             itemFrameEntity.setRotation(0);
             return ActionResult.SUCCESS;
         }
+        //lock/unlock
+        if(playerHeldItem.isOf(Items.TRIPWIRE_HOOK) && playerHeldItem.hasCustomName() && playerHeldItem.getNbt() != null){
+            String name = playerHeldItem.getNbt().getCompound("display").getString("Name");
+            if(DrawerData.getOwner(frameSaver).equals(player.getName().getString())){
+                if(name.contains("lock")){
+                    DrawerData.setLock(frameSaver, !DrawerData.getLock(frameSaver));
+                    if(DrawerData.getLock(frameSaver)){
+                        player.sendMessage(Text.translatable("drawer.locked").append(DrawerData.getUsers(frameSaver).toString()).formatted(Formatting.GOLD));
+                    }else {
+                        player.sendMessage(Text.translatable("drawer.unlocked").formatted(Formatting.GOLD));
+                    }
+
+                }
+            }
+        }
         return ActionResult.PASS;
     }
 
@@ -122,12 +147,12 @@ public class EventRegistry {
         if(world.isClient) return ActionResult.PASS;
         BlockState block = world.getBlockState(pos);
         if(block.getBlock() == Blocks.BARREL && player.getMainHandStack().getItem() == Items.ITEM_FRAME){
-            world.addParticle(ParticleTypes.ENCHANT, pos.getX(), pos.getY(), pos.getZ(), 0.1, 0.1, 0.1);
             world.setBlockState(pos, Blocks.AIR.getDefaultState());
             BlockPos framePos = pos.offset(direction);
             ItemFrameEntity itemFrameEntity = new ItemFrameEntity(EntityType.ITEM_FRAME, world, framePos, direction);
             IEntityNBTSaver frameSaver = (IEntityNBTSaver) itemFrameEntity;
             DrawerData.changeToDrawer(frameSaver);
+            DrawerData.setOwner(frameSaver, player);
 
             itemFrameEntity.setInvulnerable(true);
             itemFrameEntity.setGlowing(true);
@@ -139,6 +164,7 @@ public class EventRegistry {
             itemFrameEntity.writeCustomDataToNbt(fixedCompound);
             fixedCompound.putBoolean("Fixed", true);
             itemFrameEntity.readCustomDataFromNbt(fixedCompound);
+
         }
 
         return ActionResult.PASS;

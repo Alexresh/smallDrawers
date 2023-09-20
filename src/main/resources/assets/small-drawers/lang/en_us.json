@@ -1,0 +1,5 @@
+{
+  "drawer.locked": "The drawer is locked, the players who have access:\n",
+  "drawer.unlocked": "The drawer is unlocked",
+  "drawer.locked.by.owner": "This drawer is locked by the owner"
+}
